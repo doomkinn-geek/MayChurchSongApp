@@ -31,8 +31,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -41,8 +43,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import ru.maychurch.maychurchsong.data.preferences.UserPreferences
 import ru.maychurch.maychurchsong.ui.theme.FontSizes
+import ru.maychurch.maychurchsong.ui.theme.getSongTypography
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -64,6 +70,7 @@ fun SongDetailScreen(
     val error by songViewModel.error.collectAsState()
     
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     
     // Показываем ошибку, если она есть
     LaunchedEffect(error) {
@@ -74,15 +81,14 @@ fun SongDetailScreen(
     }
     
     // Выбираем базовый размер шрифта в зависимости от настроек
-    val baseTypography = when (fontSize) {
-        UserPreferences.FONT_SIZE_SMALL -> FontSizes.Small
-        UserPreferences.FONT_SIZE_LARGE -> FontSizes.Large
-        else -> FontSizes.Medium
-    }
+    val baseTypography = getSongTypography(fontSize)
     
     // Состояние для хранения масштаба текста 
     // Начальное значение всегда 1.0f, так как базовый размер шрифта уже учитывает настройки пользователя
     var textScale by remember { mutableFloatStateOf(1.0f) }
+    
+    // Отслеживаем, происходит ли масштабирование в данный момент
+    var isScaling by remember { mutableStateOf(false) }
     
     // Минимальный и максимальный масштаб текста
     val minScale = 0.8f
@@ -153,10 +159,22 @@ fun SongDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                // Обработка жестов масштабирования для всего экрана
+                // Применяем обработку жестов масштабирования на самом верхнем уровне
                 .pointerInput(Unit) {
                     detectTransformGestures { _, _, zoom, _ ->
+                        // Применяем масштабирование напрямую
                         textScale = (textScale * zoom).coerceIn(minScale, maxScale)
+                        
+                        // Если изменение масштаба существенно, считаем это масштабированием
+                        if (abs(zoom - 1f) > 0.01f) {
+                            isScaling = true
+                            
+                            // Запускаем короткий таймер для сброса состояния масштабирования
+                            coroutineScope.launch {
+                                delay(150)
+                                isScaling = false
+                            }
+                        }
                     }
                 }
         ) {
@@ -173,6 +191,11 @@ fun SongDetailScreen(
                         .padding(horizontal = 16.dp)
                         // Добавляем отступ снизу для индикатора масштаба
                         .padding(bottom = 40.dp)
+                        // Блокируем прокрутку во время масштабирования
+                        .pointerInput(isScaling) {
+                            // Этот модификатор поглощает жесты, когда isScaling = true,
+                            // предотвращая конфликт с жестами прокрутки
+                        }
                 ) {
                     // Элемент заголовка
                     item {

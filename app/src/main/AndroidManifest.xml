@@ -35,14 +35,10 @@
         <!-- Активность для генерации базы данных, используется только при разработке -->
         <activity
             android:name=".utils.DatabaseGeneratorActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="Database Generator"
             android:theme="@style/Theme.MayChurchSong">
-            <!-- Intent-filter для запуска активности -->
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            <!-- Убираем intent-filter в релизе -->
         </activity>
     </application>
 

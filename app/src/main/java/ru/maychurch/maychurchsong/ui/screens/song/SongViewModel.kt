@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.flatMapLatest
 import ru.maychurch.maychurchsong.data.model.Song
 import ru.maychurch.maychurchsong.data.preferences.UserPreferences
 import ru.maychurch.maychurchsong.data.repository.SongRepository
@@ -62,7 +63,9 @@ class SongViewModel : ViewModel() {
         )
     
     // Недавние песни
-    val recentSongs = repository.getRecentSongs()
+    private val _forceRecentSongsRefresh = MutableStateFlow(0)
+    val recentSongs = _forceRecentSongsRefresh
+        .flatMapLatest { repository.getRecentSongs() }
         .catch { e ->
             Log.e("SongViewModel", "Error loading recent songs", e)
             _error.value = "Ошибка загрузки недавних песен: ${e.message}"
@@ -110,6 +113,37 @@ class SongViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 Log.e("SongViewModel", "Error loading last update time", e)
+            }
+        }
+        
+        // Проверяем, является ли это первым запуском приложения
+        viewModelScope.launch {
+            try {
+                val isFirstLaunch = userPreferences.isFirstLaunch.first()
+                if (isFirstLaunch) {
+                    Log.d("SongViewModel", "Первый запуск приложения, настраиваем параметры по умолчанию")
+                    
+                    // При первой установке список недавних песен и так пустой, нет нужды в очистке
+                    // repository.clearRecentSongs()
+                    
+                    // Устанавливаем средний размер шрифта
+                    userPreferences.setFontSize(UserPreferences.FONT_SIZE_MEDIUM)
+                    Log.d("SongViewModel", "Установлен средний размер шрифта для песен")
+                    
+                    // Устанавливаем средний размер шрифта интерфейса
+                    userPreferences.setInterfaceFontSize(UserPreferences.FONT_SIZE_MEDIUM)
+                    Log.d("SongViewModel", "Установлен средний размер шрифта для интерфейса")
+                    
+                    // Устанавливаем еженедельное обновление
+                    userPreferences.setUpdateIntervalHours(UserPreferences.UPDATE_INTERVAL_WEEK)
+                    Log.d("SongViewModel", "Установлен период обновления: 1 раз в неделю")
+                    
+                    // Отмечаем, что первый запуск завершен
+                    userPreferences.setFirstLaunchCompleted()
+                    Log.d("SongViewModel", "Первоначальная настройка завершена")
+                }
+            } catch (e: Exception) {
+                Log.e("SongViewModel", "Ошибка при проверке первого запуска: ${e.message}", e)
             }
         }
     }
@@ -210,6 +244,8 @@ class SongViewModel : ViewModel() {
                 // Обновляем время последнего доступа
                 if (song != null) {
                     repository.updateLastAccessed(id)
+                    // Обновляем список недавно просмотренных песен
+                    _forceRecentSongsRefresh.value = _forceRecentSongsRefresh.value + 1
                 }
             } catch (e: Exception) {
                 Log.e("SongViewModel", "Error loading song $id", e)
@@ -269,6 +305,27 @@ class SongViewModel : ViewModel() {
     // Очистить сообщение об обновлении
     fun clearUpdateInfo() {
         _lastUpdateInfo.value = null
+    }
+    
+    // Очистить список недавно просмотренных песен
+    fun clearRecentSongs() {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                repository.clearRecentSongs()
+                // Принудительное обновление списка недавно просмотренных песен
+                _forceRecentSongsRefresh.value = _forceRecentSongsRefresh.value + 1
+                Log.d("SongViewModel", "Список недавно просмотренных песен очищен")
+                
+                // Уведомление пользователя
+                _error.value = "Список недавно просмотренных песен очищен"
+            } catch (e: Exception) {
+                Log.e("SongViewModel", "Ошибка при очистке списка недавно просмотренных песен: ${e.message}", e)
+                _error.value = "Ошибка при очистке списка: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
     
     // Получить форматированную дату последнего обновления

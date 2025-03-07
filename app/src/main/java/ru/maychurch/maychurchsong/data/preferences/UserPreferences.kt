@@ -22,9 +22,11 @@ class UserPreferences {
         private val DARK_THEME_KEY = booleanPreferencesKey("dark_theme")
         private val USE_SYSTEM_THEME_KEY = booleanPreferencesKey("use_system_theme")
         private val FONT_SIZE_KEY = intPreferencesKey("font_size")
+        private val INTERFACE_FONT_SIZE_KEY = intPreferencesKey("interface_font_size")
         private val AUTO_UPDATE_ENABLED_KEY = booleanPreferencesKey("auto_update_enabled")
         private val UPDATE_INTERVAL_HOURS_KEY = longPreferencesKey("update_interval_hours")
         private val LAST_UPDATE_TIME_KEY = longPreferencesKey("last_update_time")
+        private val FIRST_LAUNCH_KEY = booleanPreferencesKey("is_first_launch")
         
         // Размеры шрифта
         const val FONT_SIZE_SMALL = 0
@@ -38,7 +40,7 @@ class UserPreferences {
         const val UPDATE_INTERVAL_WEEK = 168L // 7 дней
         
         // Значение по умолчанию для интервала обновления
-        const val DEFAULT_UPDATE_INTERVAL = UPDATE_INTERVAL_24_HOURS
+        const val DEFAULT_UPDATE_INTERVAL = UPDATE_INTERVAL_WEEK
         
         // Singleton instance
         @Volatile
@@ -63,9 +65,14 @@ class UserPreferences {
         preferences[USE_SYSTEM_THEME_KEY] ?: true
     }
     
-    // Получить размер шрифта
+    // Получить размер шрифта для текста песен
     val fontSize: Flow<Int> = dataStore.data.map { preferences ->
         preferences[FONT_SIZE_KEY] ?: FONT_SIZE_MEDIUM
+    }
+    
+    // Получить размер шрифта для интерфейса
+    val interfaceFontSize: Flow<Int> = dataStore.data.map { preferences ->
+        preferences[INTERFACE_FONT_SIZE_KEY] ?: FONT_SIZE_MEDIUM
     }
     
     // Включено ли автоматическое обновление
@@ -83,6 +90,11 @@ class UserPreferences {
         preferences[LAST_UPDATE_TIME_KEY] ?: 0L
     }
     
+    // Проверить, является ли это первым запуском приложения
+    val isFirstLaunch: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[FIRST_LAUNCH_KEY] ?: true
+    }
+    
     // Установить тему
     suspend fun setDarkTheme(isDark: Boolean) {
         dataStore.edit { preferences ->
@@ -97,10 +109,17 @@ class UserPreferences {
         }
     }
     
-    // Установить размер шрифта
+    // Установить размер шрифта для текста песен
     suspend fun setFontSize(size: Int) {
         dataStore.edit { preferences ->
             preferences[FONT_SIZE_KEY] = size
+        }
+    }
+    
+    // Установить размер шрифта для интерфейса
+    suspend fun setInterfaceFontSize(size: Int) {
+        dataStore.edit { preferences ->
+            preferences[INTERFACE_FONT_SIZE_KEY] = size
         }
     }
     
@@ -122,6 +141,13 @@ class UserPreferences {
     suspend fun setLastUpdateTime(timestamp: Long) {
         dataStore.edit { preferences ->
             preferences[LAST_UPDATE_TIME_KEY] = timestamp
+        }
+    }
+    
+    // Установить флаг первого запуска
+    suspend fun setFirstLaunchCompleted() {
+        dataStore.edit { preferences ->
+            preferences[FIRST_LAUNCH_KEY] = false
         }
     }
 } 

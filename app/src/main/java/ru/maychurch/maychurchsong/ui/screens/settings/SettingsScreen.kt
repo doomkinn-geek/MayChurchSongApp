@@ -53,6 +53,7 @@ fun SettingsScreen(
     val isDarkTheme by userPreferences.isDarkTheme.collectAsState(initial = false)
     val useSystemTheme by userPreferences.useSystemTheme.collectAsState(initial = true)
     val fontSize by userPreferences.fontSize.collectAsState(initial = UserPreferences.FONT_SIZE_MEDIUM)
+    val interfaceFontSize by userPreferences.interfaceFontSize.collectAsState(initial = UserPreferences.FONT_SIZE_MEDIUM)
     val isAutoUpdateEnabled by userPreferences.isAutoUpdateEnabled.collectAsState(initial = true)
     val updateIntervalHours by userPreferences.updateIntervalHours.collectAsState(initial = UserPreferences.DEFAULT_UPDATE_INTERVAL)
     
@@ -95,7 +96,8 @@ fun SettingsScreen(
                     ) {
                         Text(
                             text = "Использовать системную тему",
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyLarge
                         )
                         Switch(
                             checked = useSystemTheme,
@@ -116,7 +118,8 @@ fun SettingsScreen(
                         ) {
                             Text(
                                 text = "Темная тема",
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyLarge
                             )
                             Switch(
                                 checked = isDarkTheme,
@@ -133,7 +136,7 @@ fun SettingsScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Секция размера шрифта
+            // Секция размера шрифта песен
             Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -144,7 +147,7 @@ fun SettingsScreen(
                         .selectableGroup()
                 ) {
                     Text(
-                        text = "Размер шрифта",
+                        text = "Размер шрифта песен",
                         style = MaterialTheme.typography.titleLarge
                     )
                     
@@ -180,6 +183,61 @@ fun SettingsScreen(
                         onClick = {
                             scope.launch {
                                 userPreferences.setFontSize(UserPreferences.FONT_SIZE_LARGE)
+                            }
+                        }
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Секция размера шрифта интерфейса
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .selectableGroup()
+                ) {
+                    Text(
+                        text = "Размер шрифта интерфейса",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    FontSizeOption(
+                        text = "Маленький",
+                        selected = interfaceFontSize == UserPreferences.FONT_SIZE_SMALL,
+                        onClick = {
+                            scope.launch {
+                                userPreferences.setInterfaceFontSize(UserPreferences.FONT_SIZE_SMALL)
+                            }
+                        }
+                    )
+                    
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    
+                    FontSizeOption(
+                        text = "Средний",
+                        selected = interfaceFontSize == UserPreferences.FONT_SIZE_MEDIUM,
+                        onClick = {
+                            scope.launch {
+                                userPreferences.setInterfaceFontSize(UserPreferences.FONT_SIZE_MEDIUM)
+                            }
+                        }
+                    )
+                    
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    
+                    FontSizeOption(
+                        text = "Большой",
+                        selected = interfaceFontSize == UserPreferences.FONT_SIZE_LARGE,
+                        onClick = {
+                            scope.launch {
+                                userPreferences.setInterfaceFontSize(UserPreferences.FONT_SIZE_LARGE)
                             }
                         }
                     )
@@ -504,7 +562,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     Text(
-                        text = "Духовные песни: сборник текстов Майской Церкви",
+                        text = "Духовные песни: сборник текстов песен Майской Церкви",
                         style = MaterialTheme.typography.bodyLarge
                     )
                     

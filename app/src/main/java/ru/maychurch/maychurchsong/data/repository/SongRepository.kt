@@ -54,6 +54,18 @@ class SongRepository(private val songDao: SongDao) {
         songDao.updateLastAccessed(id, System.currentTimeMillis())
     }
     
+    // Очистить список недавно просмотренных песен (сбросить все lastAccessed значения)
+    suspend fun clearRecentSongs() {
+        try {
+            // Используем прямой SQL-запрос для эффективной очистки всех записей
+            songDao.clearAllLastAccessed()
+            Log.d(TAG, "Список недавно просмотренных песен очищен успешно")
+        } catch (e: Exception) {
+            Log.e(TAG, "Ошибка при очистке списка недавно просмотренных песен: ${e.message}", e)
+            throw e // Пробрасываем исключение для обработки в ViewModel
+        }
+    }
+    
     // Вставка новых песен в базу данных
     suspend fun insertSongs(songs: List<Song>) {
         songDao.insertSongs(songs)

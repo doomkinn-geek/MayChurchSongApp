@@ -101,7 +101,7 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Духовные песни") }
+                title = { Text("Духовные песни. Сборник Майской Церкви") }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -163,7 +163,7 @@ fun HomeScreen(
                 }
                 
                 // Показываем информацию об обновлении базы данных
-                lastUpdateInfo?.let {
+                /*lastUpdateInfo?.let {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -176,7 +176,7 @@ fun HomeScreen(
                             textAlign = TextAlign.Center
                         )
                     }
-                }
+                }*/
                 
                 if (isLoading && songs.isEmpty()) {
                     Box(

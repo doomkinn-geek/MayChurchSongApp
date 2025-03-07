@@ -76,6 +76,9 @@ interface SongDao {
     @Query("UPDATE songs SET lastAccessed = :timestamp WHERE id = :id")
     suspend fun updateLastAccessed(id: String, timestamp: Long)
     
-    @Query("SELECT * FROM songs ORDER BY lastAccessed DESC LIMIT 10")
+    @Query("UPDATE songs SET lastAccessed = 0")
+    suspend fun clearAllLastAccessed()
+    
+    @Query("SELECT * FROM songs WHERE lastAccessed > 0 ORDER BY lastAccessed DESC LIMIT 10")
     fun getRecentSongs(): Flow<List<Song>>
 } 
