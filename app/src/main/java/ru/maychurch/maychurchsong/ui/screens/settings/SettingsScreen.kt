@@ -14,6 +14,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,11 +42,16 @@ import ru.maychurch.maychurchsong.data.preferences.UserPreferences
 import ru.maychurch.maychurchsong.workers.WorkManagerHelper
 import ru.maychurch.maychurchsong.data.repository.SongRepository
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    userPreferences: UserPreferences
+    userPreferences: UserPreferences,
+    onExitAppRequest: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -59,6 +66,14 @@ fun SettingsScreen(
     
     // Прокрутка для длинного контента
     val scrollState = rememberScrollState()
+    
+    // Состояние для отслеживания процесса обновления
+    var isUpdating by remember { mutableStateOf(false) }
+    var updateResult by remember { mutableStateOf<String?>(null) }
+    var updateError by remember { mutableStateOf<String?>(null) }
+    
+    // Отдельная область для корутин обновления, чтобы они могли быть отменены при уничтожении экрана
+    val updateScope = rememberCoroutineScope()
     
     Scaffold(
         topBar = {
@@ -261,14 +276,6 @@ fun SettingsScreen(
                     )
                     
                     Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Используем rememberCoroutineScope для запуска в фоне
-                    val updateScope = rememberCoroutineScope()
-                    
-                    // Состояние процесса обновления
-                    var isUpdating by remember { mutableStateOf(false) }
-                    var updateResult by remember { mutableStateOf<String?>(null) }
-                    var updateError by remember { mutableStateOf<String?>(null) }
                     
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -569,7 +576,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     
                     Text(
-                        text = "Версия 1.0",
+                        text = "Версия 1.3.0",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )

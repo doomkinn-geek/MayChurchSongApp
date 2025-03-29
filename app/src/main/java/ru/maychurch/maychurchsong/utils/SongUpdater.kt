@@ -85,15 +85,12 @@ class SongUpdater(
             val existingSongs = repository.getAllSongs().first()
             val existingSongIds = existingSongs.map { it.id }.toSet()
             
-            // Определяем, какие песни новые
+            // Определяем, какие песни новые (id которых нет в базе)
             val newSongInfos = allSongsInfo.filter { it.id !in existingSongIds }
             
-            // Также можем определить песни, которые нужно обновить (если их id есть в базе)
-            val songsToUpdate = if (forceUpdate) {
-                allSongsInfo.filter { it.id in existingSongIds }
-            } else {
-                emptyList() // При обычном обновлении не обновляем существующие песни
-            }
+            // Мы не обновляем существующие песни, даже если указан forceUpdate
+            // songsToUpdate теперь всегда пустой список
+            val songsToUpdate = emptyList<SongInfo>()
             
             val newSongs = mutableListOf<Song>()
             val updatedSongs = mutableListOf<Song>()
@@ -125,36 +122,9 @@ class SongUpdater(
                 Log.d(TAG, "Новых песен не найдено")
             }
             
-            // Обрабатываем песни для обновления
-            if (songsToUpdate.isNotEmpty()) {
-                Log.d(TAG, "Найдено ${songsToUpdate.size} песен для обновления")
-                
-                for ((index, songInfo) in songsToUpdate.withIndex()) {
-                    try {
-                        Log.d(TAG, "Обновление песни ${index + 1}/${songsToUpdate.size}: ${songInfo.id}")
-                        
-                        // Загружаем песню
-                        val song = downloadSong(songInfo)
-                        if (song != null) {
-                            // Сохраняем статус избранного из существующей песни
-                            val existingSong = existingSongs.find { it.id == songInfo.id }
-                            if (existingSong != null) {
-                                val updatedSong = song.copy(isFavorite = existingSong.isFavorite)
-                                updatedSongs.add(updatedSong)
-                            } else {
-                                updatedSongs.add(song)
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Ошибка при обновлении песни ${songInfo.id}: ${e.message}")
-                    }
-                }
-                
-                // Обновляем существующие песни
-                if (updatedSongs.isNotEmpty()) {
-                    repository.updateSongs(updatedSongs)
-                    Log.d(TAG, "Обновлено ${updatedSongs.size} существующих песен")
-                }
+            // Логируем, что мы пропускаем обновление существующих песен
+            if (forceUpdate) {
+                Log.d(TAG, "Пропускаем обновление существующих песен (${existingSongIds.size} шт.), чтобы не перезаписывать данные в базе")
             }
             
             // Сохраняем время последнего обновления

@@ -2,51 +2,72 @@ package ru.maychurch.maychurchsong.ui.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 
+/**
+ * Экраны приложения
+ */
 sealed class Screen(
-    val route: String,
+    val route: String, 
     val title: String,
-    val icon: ImageVector
+    val icon: ImageVector,
+    val outlinedIcon: ImageVector
 ) {
-    data object Home : Screen(
-        route = "home",
-        title = "Главная",
-        icon = Icons.Default.Home
+    // Главный экран со списком всех песен
+    object Home : Screen(
+        route = "home", 
+        title = "Все песни",
+        icon = Icons.Filled.Home,
+        outlinedIcon = Icons.Outlined.Home
     )
     
-    data object Recent : Screen(
-        route = "recent",
+    // Экран с недавно просмотренными песнями
+    object Recent : Screen(
+        route = "recent", 
         title = "Недавние",
-        icon = Icons.Default.History
+        icon = Icons.Filled.History,
+        outlinedIcon = Icons.Outlined.History
     )
     
-    data object Favorites : Screen(
-        route = "favorites",
+    // Экран с избранными песнями
+    object Favorites : Screen(
+        route = "favorites", 
         title = "Избранное",
-        icon = Icons.Default.Favorite
+        icon = Icons.Filled.Favorite,
+        outlinedIcon = Icons.Outlined.Favorite
     )
     
-    data object Settings : Screen(
-        route = "settings",
+    // Экран настроек
+    object Settings : Screen(
+        route = "settings", 
         title = "Настройки",
-        icon = Icons.Default.Settings
+        icon = Icons.Filled.Settings,
+        outlinedIcon = Icons.Outlined.Settings
     )
     
-    data object SongDetail : Screen(
-        route = "song/{songId}",
+    // Экран с детальной информацией о песне
+    object SongDetail : Screen(
+        route = "song/{songId}", 
         title = "Песня",
-        icon = Icons.Default.Home
+        icon = Icons.Filled.Home, // Иконки не используются для этого экрана, так как он не в меню
+        outlinedIcon = Icons.Outlined.Home
     ) {
-        fun createRoute(songId: String): String {
-            return "song/$songId"
-        }
+        // Функция для создания маршрута с ID песни
+        fun createRoute(songId: String): String = "song/$songId"
+        
+        // Проверка, является ли маршрут экраном деталей песни
+        fun matches(route: String?): Boolean = route?.startsWith("song/") ?: false
     }
     
     companion object {
+        // Элементы для нижней навигационной панели
         val bottomNavItems = listOf(Home, Recent, Favorites, Settings)
     }
 } 

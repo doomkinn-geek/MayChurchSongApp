@@ -4,6 +4,8 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.RewriteQueriesToDropUnusedColumns
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import ru.maychurch.maychurchsong.data.model.Song
@@ -46,6 +48,7 @@ interface SongDao {
      * затем песни с запросом в заголовке, затем песни с запросом в тексте
      * Учитывает поиск по числовому ID без ведущих нулей
      */
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         SELECT *, 
         CASE
@@ -81,4 +84,90 @@ interface SongDao {
     
     @Query("SELECT * FROM songs WHERE lastAccessed > 0 ORDER BY lastAccessed DESC LIMIT 10")
     fun getRecentSongs(): Flow<List<Song>>
+    
+    /**
+     * Принудительно сохраняет все фавориты в базу данных одним SQL-запросом
+     * @param favorites Список ID песен, которые отмечены как избранные
+     */
+    @Transaction
+    suspend fun saveFavoritesToDatabase(favorites: List<String>) {
+        try {
+            android.util.Log.e("SongDao", "DAO_FAV: Начинаю сохранение избранных песен, количество: ${favorites.size}")
+            
+            // Сначала сбрасываем все фавориты
+            android.util.Log.e("SongDao", "DAO_FAV: Очищаю все предыдущие фавориты")
+            clearAllFavorites()
+            
+            // Затем устанавливаем новые
+            if (favorites.isNotEmpty()) {
+                android.util.Log.e("SongDao", "DAO_FAV: Устанавливаю новые фавориты: $favorites")
+                setFavoritesByIds(favorites)
+                android.util.Log.e("SongDao", "DAO_FAV: Фавориты успешно установлены")
+            } else {
+                android.util.Log.e("SongDao", "DAO_FAV: Нет избранных песен для сохранения")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SongDao", "DAO_FAV: Ошибка при сохранении избранных: ${e.message}", e)
+            throw e // Пробрасываем исключение дальше для обработки
+        }
+    }
+    
+    /**
+     * Сбрасывает все флаги избранного
+     */
+    @Query("UPDATE songs SET isFavorite = 0")
+    suspend fun clearAllFavorites()
+    
+    /**
+     * Устанавливает флаг избранного для списка песен
+     */
+    @Query("UPDATE songs SET isFavorite = 1 WHERE id IN (:songIds)")
+    suspend fun setFavoritesByIds(songIds: List<String>)
+    
+    /**
+     * Принудительно сохраняет данные о недавно просмотренных песнях
+     * @param recentSongs Список пар ID песни и времени доступа
+     */
+    @Transaction
+    suspend fun saveRecentSongsToDatabase(recentSongs: List<Pair<String, Long>>) {
+        try {
+            android.util.Log.e("SongDao", "DAO_RECENT: Начинаю сохранение недавних песен, количество: ${recentSongs.size}")
+            
+            // Сначала очищаем все метки времени
+            android.util.Log.e("SongDao", "DAO_RECENT: Очищаю все предыдущие метки времени")
+            clearAllLastAccessed()
+            
+            // Затем устанавливаем новые для каждой песни
+            for ((songId, timestamp) in recentSongs) {
+                android.util.Log.e("SongDao", "DAO_RECENT: Обновляю время доступа для песни $songId: $timestamp")
+                try {
+                    updateLastAccessed(songId, timestamp)
+                } catch (e: Exception) {
+                    android.util.Log.e("SongDao", "DAO_RECENT: Ошибка при обновлении времени для песни $songId: ${e.message}", e)
+                }
+            }
+            
+            android.util.Log.e("SongDao", "DAO_RECENT: Недавние песни успешно сохранены")
+        } catch (e: Exception) {
+            android.util.Log.e("SongDao", "DAO_RECENT: Ошибка при сохранении недавних: ${e.message}", e)
+            throw e // Пробрасываем исключение дальше для обработки
+        }
+    }
+    
+    /**
+     * Получает список ID всех избранных песен
+     */
+    @Query("SELECT id FROM songs WHERE isFavorite = 1")
+    suspend fun getFavoriteIds(): List<String>
+    
+    /**
+     * Получает список пар ID и времени последнего доступа для недавних песен
+     */
+    @Query("SELECT id, lastAccessed FROM songs WHERE lastAccessed > 0")
+    suspend fun getRecentSongsWithTimestamps(): List<RecentSongInfo>
+    
+    /**
+     * Вспомогательный класс для получения информации о недавно просмотренных песнях
+     */
+    data class RecentSongInfo(val id: String, val lastAccessed: Long)
 } 

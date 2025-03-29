@@ -256,22 +256,36 @@ class SongViewModel : ViewModel() {
         }
     }
     
-    // Обновить статус избранного
+    // Переключить статус "избранное" для песни
     fun toggleFavorite(id: String) {
         viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
             try {
                 val song = repository.getSongById(id)
                 if (song != null) {
-                    repository.updateFavoriteStatus(id, !song.isFavorite)
+                    // Инвертируем текущий статус
+                    val newFavoriteStatus = !song.isFavorite
                     
-                    // Обновляем текущую песню, если она открыта
+                    // Обновляем статус в базе данных
+                    repository.updateFavoriteStatus(id, newFavoriteStatus)
+                    
+                    // Если эта песня сейчас открыта, обновляем её локальное состояние
                     if (_currentSong.value?.id == id) {
-                        _currentSong.value = _currentSong.value?.copy(isFavorite = !song.isFavorite)
+                        _currentSong.value = _currentSong.value?.copy(isFavorite = newFavoriteStatus)
                     }
+                    
+                    // Форсируем обновление списков, чтобы изменения отразились в UI немедленно
+                    _forceRecentSongsRefresh.value = _forceRecentSongsRefresh.value + 1
+                    
+                    // Логируем успешное обновление статуса
+                    Log.d("SongViewModel", "Статус избранного для песни $id изменен на: $newFavoriteStatus")
                 }
             } catch (e: Exception) {
+                _error.value = "Ошибка при обновлении статуса песни: ${e.message}"
                 Log.e("SongViewModel", "Error toggling favorite for song $id", e)
-                _error.value = "Ошибка обновления статуса избранного: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }

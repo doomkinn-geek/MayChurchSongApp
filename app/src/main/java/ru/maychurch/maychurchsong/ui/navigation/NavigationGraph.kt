@@ -20,6 +20,7 @@ import ru.maychurch.maychurchsong.ui.screens.song.SongViewModel
 fun NavigationGraph(
     navController: NavHostController,
     userPreferences: UserPreferences,
+    onExitAppRequest: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Получаем общую ViewModel для песен
@@ -59,7 +60,8 @@ fun NavigationGraph(
         
         composable(Screen.Settings.route) {
             SettingsScreen(
-                userPreferences = userPreferences
+                userPreferences = userPreferences,
+                onExitAppRequest = onExitAppRequest
             )
         }
         

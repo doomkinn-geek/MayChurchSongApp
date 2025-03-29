@@ -46,12 +46,46 @@ class SongRepository(private val songDao: SongDao) {
     
     // Обновить статус избранного
     suspend fun updateFavoriteStatus(id: String, isFavorite: Boolean) {
-        songDao.updateFavoriteStatus(id, isFavorite)
+        try {
+            // Выполняем обновление статуса избранного
+            songDao.updateFavoriteStatus(id, isFavorite)
+            
+            // Для надежности обновляем текущий объект песни целиком
+            val song = songDao.getSongById(id)
+            if (song != null) {
+                val updatedSong = song.copy(isFavorite = isFavorite)
+                songDao.updateSong(updatedSong)
+            }
+            
+            // Логирование успешного обновления
+            android.util.Log.d("SongRepository", "Статус избранного для песни $id обновлен: $isFavorite")
+        } catch (e: Exception) {
+            android.util.Log.e("SongRepository", "Ошибка при обновлении статуса избранного: ${e.message}", e)
+            throw e
+        }
     }
     
     // Обновить время последнего доступа
     suspend fun updateLastAccessed(id: String) {
-        songDao.updateLastAccessed(id, System.currentTimeMillis())
+        try {
+            val timestamp = System.currentTimeMillis()
+            
+            // Выполняем обновление времени последнего доступа
+            songDao.updateLastAccessed(id, timestamp)
+            
+            // Для надежности обновляем текущий объект песни целиком
+            val song = songDao.getSongById(id)
+            if (song != null) {
+                val updatedSong = song.copy(lastAccessed = timestamp)
+                songDao.updateSong(updatedSong)
+            }
+            
+            // Логирование успешного обновления
+            android.util.Log.d("SongRepository", "Время последнего доступа для песни $id обновлено: $timestamp")
+        } catch (e: Exception) {
+            android.util.Log.e("SongRepository", "Ошибка при обновлении времени последнего доступа: ${e.message}", e)
+            throw e
+        }
     }
     
     // Очистить список недавно просмотренных песен (сбросить все lastAccessed значения)

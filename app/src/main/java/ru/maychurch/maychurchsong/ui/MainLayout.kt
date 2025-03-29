@@ -16,32 +16,46 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavHostController
 import ru.maychurch.maychurchsong.data.preferences.UserPreferences
 import ru.maychurch.maychurchsong.ui.navigation.NavigationGraph
 import ru.maychurch.maychurchsong.ui.navigation.Screen
 
 @Composable
 fun MainLayout(
-    userPreferences: UserPreferences
+    userPreferences: UserPreferences,
+    onExitAppRequest: () -> Unit = {},
+    onCurrentRouteChange: (String) -> Unit = {},
+    navController: NavHostController = rememberNavController()
 ) {
-    val navController = rememberNavController()
+    // Отслеживаем текущий экран для обработки кнопки "назад"
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+    
+    // Обновляем текущий маршрут при его изменении
+    currentDestination?.route?.let { route ->
+        onCurrentRouteChange(route)
+    }
+    
+    // Список экранов для навигационной панели
+    val screens = listOf(
+        Screen.Home,
+        Screen.Recent,
+        Screen.Favorites,
+        Screen.Settings
+    )
     
     Scaffold(
         bottomBar = {
             NavigationBar {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentDestination = navBackStackEntry?.destination
-                val isSongDetailOpen = currentDestination?.route?.startsWith("song/") ?: false
-                
-                Screen.bottomNavItems.forEach { screen ->
+                screens.forEach { screen ->
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = screen.title) },
                         label = { Text(screen.title) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                         onClick = {
-                            // Проверяем, открыта ли сейчас песня и пользователь нажал "Главная"
-                            if (isSongDetailOpen && screen.route == Screen.Home.route) {
-                                // Если так, возвращаемся назад к списку песен
+                            // Если это возврат к SongDetail, используем navigateUp вместо navigate
+                            if (screen == Screen.Home && currentDestination?.route?.startsWith(Screen.SongDetail.route) == true) {
                                 navController.navigateUp()
                             } else {
                                 // Стандартная навигация
@@ -70,7 +84,8 @@ fun MainLayout(
         ) {
             NavigationGraph(
                 navController = navController,
-                userPreferences = userPreferences
+                userPreferences = userPreferences,
+                onExitAppRequest = onExitAppRequest
             )
         }
     }
